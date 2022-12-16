@@ -1,35 +1,38 @@
 #include <gtk/gtk.h>
 
-static void activate(GtkApplication *app, gpointer user_data) {
-    GtkWidget *window;
-    GtkWidget *button;
-    GtkWidget *button_box;
+gboolean close_function(GtkWidget* pWidget, GVariant* pVariant, gpointer pVoid)
+{
+    gtk_window_close(GTK_WINDOW(pWidget));
+};
 
-    window = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(window), "i3blank");
-    gtk_window_set_default_size(GTK_WINDOW(window), 200, 200);
+static void on_activate(GtkApplication* app)
+{
+    // Create a new window
+    GtkWidget* window = gtk_application_window_new(app);
 
-    button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_window_set_decorated((GtkWindow *)window, false);
 
-    gtk_container_add(GTK_CONTAINER(window), button_box);
+    // Create a new button
+    GtkWidget* button = gtk_button_new_with_label("OO\nOO");
+    gtk_button_set_has_frame(GTK_BUTTON(button), FALSE);
 
-    button = gtk_button_new();
-    gtk_button_set_relief((GtkButton *)button, GTK_RELIEF_NONE);
+    // When the button is clicked, close the window passed as an argument
+    // g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_window_close), window);
 
-    g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_widget_destroy),window);
-    gtk_container_add(GTK_CONTAINER(button_box), button);
+    GtkEventController* controller = gtk_shortcut_controller_new();
+    GtkShortcut* shortcut = gtk_shortcut_new(gtk_keyval_trigger_new(GDK_KEY_x, 0), gtk_callback_action_new(close_function, window, NULL));
+    gtk_shortcut_controller_add_shortcut((GtkShortcutController *)controller, shortcut);
+    gtk_widget_add_controller(window, controller);
 
-    gtk_widget_show_all(window);
+    gtk_window_set_child(GTK_WINDOW(window), button);
+    gtk_window_present(GTK_WINDOW(window));
 }
 
-int main(int argc, char **argv) {
-    GtkApplication *app;
-    int status;
+int main(int argc, char** argv)
+{
+    // Create a new application
+    GtkApplication* app = gtk_application_new("net.wielding.blank", G_APPLICATION_DEFAULT_FLAGS);
 
-    app = gtk_application_new("dev.wielding.i3blank", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    status = g_application_run(G_APPLICATION(app), argc, argv);
-    g_object_unref(app);
-
-    return status;
+    g_signal_connect(app, "activate", G_CALLBACK(on_activate), NULL);
+    return g_application_run(G_APPLICATION(app), argc, argv);
 }
